@@ -50,6 +50,7 @@ GoogleService-Info.plist
 lib/firebase_config.dart
 web/index.html
 web/locate.html
+lib/services/sms_service.dart
 
 
 # Environment

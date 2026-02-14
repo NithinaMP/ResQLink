@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/incident_model.dart';
 import '../services/firestore_service.dart';
+import '../services/sms_service.dart';
 
 class NewIncidentScreen extends StatefulWidget {
   const NewIncidentScreen({super.key});
@@ -43,26 +44,46 @@ class _NewIncidentScreenState extends State<NewIncidentScreen> {
       address: _addressController.text.trim(),
     );
 
+    // Step 1: Create incident in Firestore
     final id = await _firestoreService.createIncident(incident);
 
-    setState(() => _isLoading = false);
-
     if (id != null && mounted) {
-      // Show success
+      // Step 2: Send SMS with location link!
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Incident created successfully!'),
-          backgroundColor: Colors.green,
+          content: Text('📨 Sending location SMS to caller...'),
+          backgroundColor: Colors.blue,
         ),
       );
-      Navigator.pop(context); // Go back to dashboard
+
+      final smsSent = await SmsService.sendLocationRequest(
+        toPhone: _phoneController.text.trim(),
+        incidentId: id,
+      );
+
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(smsSent
+                ? '✅ Incident created & SMS sent to caller!'
+                : '✅ Incident created! SMS sending failed - check number'),
+            backgroundColor: smsSent ? Colors.green : Colors.orange,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Failed to create incident!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Failed to create incident!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

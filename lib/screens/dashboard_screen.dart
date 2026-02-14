@@ -365,6 +365,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
 
+            // Location status indicator
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  incident.locationShared == true
+                      ? Icons.location_on
+                      : Icons.location_off,
+                  color: incident.locationShared == true
+                      ? Colors.green
+                      : Colors.grey,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  incident.locationShared == true
+                      ? 'Location received ✅'
+                      : 'Waiting for location...',
+                  style: TextStyle(
+                    color: incident.locationShared == true
+                        ? Colors.green
+                        : Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 8),
 
             // ✅ NEW: Time + Tap hint row

@@ -9,6 +9,7 @@ class IncidentModel {
   final String status;
   final DateTime timestamp;
   final String? address;
+  final bool? locationShared;
 
   IncidentModel({
     required this.id,
@@ -19,6 +20,8 @@ class IncidentModel {
     required this.status,
     required this.timestamp,
     this.address,
+    this.locationShared,
+
   });
 
   // Create from Firestore document
@@ -46,6 +49,7 @@ class IncidentModel {
       status: map['status'] ?? 'NEW',
       timestamp: parsedTime,
       address: map['address'],
+      locationShared: map['locationShared'] ?? false,
     );
   }
 
