@@ -49,6 +49,7 @@ google-services.json
 GoogleService-Info.plist
 lib/firebase_config.dart
 web/index.html
+web/locate.html
 
 
 # Environment

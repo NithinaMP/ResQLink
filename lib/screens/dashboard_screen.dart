@@ -17,7 +17,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final AuthService _authService = AuthService();
 
-  // Status color helper
   Color _statusColor(String status) {
     switch (status) {
       case 'NEW': return Colors.red;
@@ -28,7 +27,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Status icon helper
   IconData _statusIcon(String status) {
     switch (status) {
       case 'NEW': return Icons.notification_important;
@@ -39,7 +37,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Incident type icon
   String _typeEmoji(String type) {
     switch (type) {
       case 'Fire': return '🔥';
@@ -51,7 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Update status dialog
   void _showStatusUpdate(IncidentModel incident) {
     showModalBottomSheet(
       context: context,
@@ -85,8 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               trailing: incident.status == status
-                  ? const Icon(Icons.check,
-                  color: Colors.green)
+                  ? const Icon(Icons.check, color: Colors.green)
                   : null,
               onTap: () async {
                 await _firestoreService.updateStatus(
@@ -109,8 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: const Color(0xFF2a2a2a),
         title: const Row(
           children: [
-            Icon(Icons.local_fire_department,
-                color: Colors.red, size: 28),
+            Icon(Icons.local_fire_department, color: Colors.red, size: 28),
             SizedBox(width: 8),
             Text(
               'ResQLink',
@@ -122,20 +116,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          // Officer info
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Center(
               child: Text(
-                FirebaseAuth.instance.currentUser?.email
-                    ?.split('@')[0] ??
+                FirebaseAuth.instance.currentUser?.email?.split('@')[0] ??
                     'Officer',
-                style: const TextStyle(
-                    color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),
           ),
-          // Logout
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
@@ -143,8 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (mounted) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               }
             },
@@ -152,33 +141,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
 
-      // FAB - Create new incident
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => const NewIncidentScreen()),
+          MaterialPageRoute(builder: (_) => const NewIncidentScreen()),
         ),
         backgroundColor: Colors.red,
         icon: const Icon(Icons.add_alert, color: Colors.white),
         label: const Text(
           'New Incident',
-          style: TextStyle(color: Colors.white,
-              fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
 
       body: StreamBuilder<List<IncidentModel>>(
         stream: _firestoreService.getIncidentsStream(),
         builder: (context, snapshot) {
-          // Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: Colors.red),
             );
           }
 
-          // Error
           if (snapshot.hasError) {
             return Center(
               child: Text(
@@ -189,14 +173,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           final incidents = snapshot.data ?? [];
-
-          // Count stats
-          final active =
-              incidents.where((i) => i.status == 'NEW').length;
-          final enRoute =
-              incidents.where((i) => i.status == 'EN_ROUTE').length;
-          final resolved =
-              incidents.where((i) => i.status == 'RESOLVED').length;
+          final active = incidents.where((i) => i.status == 'NEW').length;
+          final enRoute = incidents.where((i) => i.status == 'EN_ROUTE').length;
+          final resolved = incidents.where((i) => i.status == 'RESOLVED').length;
 
           return Column(
             children: [
@@ -206,19 +185,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: const Color(0xFF2a2a2a),
                 child: Row(
                   children: [
-                    _statCard('🔴 Active', active.toString(),
-                        Colors.red),
+                    _statCard('🔴 Active', active.toString(), Colors.red),
                     const SizedBox(width: 10),
-                    _statCard('🟠 En Route', enRoute.toString(),
-                        Colors.orange),
+                    _statCard('🟠 En Route', enRoute.toString(), Colors.orange),
                     const SizedBox(width: 10),
-                    _statCard('✅ Resolved', resolved.toString(),
-                        Colors.green),
+                    _statCard('✅ Resolved', resolved.toString(), Colors.green),
                   ],
                 ),
               ),
 
-              // Incidents list header
+              // Header
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -240,38 +216,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              // Incidents list
+              // List
               Expanded(
                 child: incidents.isEmpty
                     ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.inbox,
-                          color: Colors.grey, size: 60),
+                      Icon(Icons.inbox, color: Colors.grey, size: 60),
                       SizedBox(height: 16),
                       Text(
                         'No incidents yet',
-                        style: TextStyle(
-                            color: Colors.grey, fontSize: 18),
+                        style: TextStyle(color: Colors.grey, fontSize: 18),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Press "New Incident" when a call comes in',
-                        style: TextStyle(
-                            color: Colors.grey, fontSize: 13),
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                     ],
                   ),
                 )
                     : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: incidents.length,
-                  itemBuilder: (context, i) {
-                    final incident = incidents[i];
-                    return _incidentCard(incident);
-                  },
+                  itemBuilder: (context, i) =>
+                      _incidentCard(incidents[i]),
                 ),
               ),
             ],
@@ -281,12 +251,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Stat card widget
   Widget _statCard(String label, String count, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
@@ -304,8 +272,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             Text(
               label,
-              style: const TextStyle(
-                  color: Colors.grey, fontSize: 11),
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
             ),
           ],
         ),
@@ -313,7 +280,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Incident card widget
   Widget _incidentCard(IncidentModel incident) {
     return GestureDetector(
       onTap: () => _showStatusUpdate(incident),
@@ -366,12 +332,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _statusColor(incident.status)
-                        .withOpacity(0.2),
+                    color: _statusColor(incident.status).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _statusColor(incident.status),
-                    ),
+                    border: Border.all(color: _statusColor(incident.status)),
                   ),
                   child: Text(
                     incident.status.replaceAll('_', ' '),
@@ -385,38 +348,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
 
-            if (incident.address != null &&
-                incident.address!.isNotEmpty) ...[
+            // Address
+            if (incident.address != null && incident.address!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.location_on,
-                      color: Colors.grey, size: 14),
+                  const Icon(Icons.location_on, color: Colors.grey, size: 14),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       incident.address!,
-                      style: const TextStyle(
-                          color: Colors.grey, fontSize: 13),
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ],
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            // Tap to update hint
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            // ✅ NEW: Time + Tap hint row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.touch_app,
-                    color: Colors.grey, size: 14),
-                SizedBox(width: 4),
-                Text(
-                  'Tap to update status',
-                  style: TextStyle(
-                      color: Colors.grey, fontSize: 11),
+                // Time display
+                Row(
+                  children: [
+                    const Icon(Icons.access_time,
+                        color: Colors.grey, size: 13),
+                    const SizedBox(width: 4),
+                    Text(
+                      incident.formattedTime, // ✅ Uses new formattedTime getter
+                      style: const TextStyle(
+                          color: Colors.grey, fontSize: 11),
+                    ),
+                  ],
+                ),
+                // Tap hint
+                const Row(
+                  children: [
+                    Icon(Icons.touch_app, color: Colors.grey, size: 13),
+                    SizedBox(width: 4),
+                    Text(
+                      'Tap to update status',
+                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                    ),
+                  ],
                 ),
               ],
             ),

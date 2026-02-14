@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class IncidentModel {
   final String id;
   final String callerPhone;
@@ -5,7 +7,7 @@ class IncidentModel {
   final double? longitude;
   final String incidentType;
   final String status;
-  final String timestamp;
+  final DateTime timestamp;
   final String? address;
 
   IncidentModel({
@@ -21,6 +23,20 @@ class IncidentModel {
 
   // Create from Firestore document
   factory IncidentModel.fromMap(Map<String, dynamic> map, String docId) {
+    // Fix: Handle BOTH Timestamp and String formats!
+    DateTime parsedTime;
+    final ts = map['timestamp'];
+    if (ts is Timestamp) {
+      // Firebase Timestamp object
+      parsedTime = ts.toDate();
+    } else if (ts is String) {
+      // String format
+      parsedTime = DateTime.tryParse(ts) ?? DateTime.now();
+    } else {
+      // Fallback
+      parsedTime = DateTime.now();
+    }
+
     return IncidentModel(
       id: docId,
       callerPhone: map['callerPhone'] ?? 'Unknown',
@@ -28,7 +44,7 @@ class IncidentModel {
       longitude: map['location']?['lng']?.toDouble(),
       incidentType: map['incidentType'] ?? 'Unknown',
       status: map['status'] ?? 'NEW',
-      timestamp: map['timestamp'] ?? '',
+      timestamp: parsedTime,
       address: map['address'],
     );
   }
@@ -37,14 +53,27 @@ class IncidentModel {
   Map<String, dynamic> toMap() {
     return {
       'callerPhone': callerPhone,
-      'location': latitude != null ? {
+      'location': latitude != null
+          ? {
         'lat': latitude,
         'lng': longitude,
-      } : null,
+      }
+          : null,
       'incidentType': incidentType,
       'status': status,
-      'timestamp': timestamp,
+      'timestamp': Timestamp.fromDate(timestamp), // Store as Timestamp
       'address': address,
     };
+  }
+
+  // Format time for display
+  String get formattedTime {
+    final now = DateTime.now();
+    final diff = now.difference(timestamp);
+
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 }

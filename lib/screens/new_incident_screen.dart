@@ -39,7 +39,7 @@ class _NewIncidentScreenState extends State<NewIncidentScreen> {
       callerPhone: _phoneController.text.trim(),
       incidentType: _selectedType,
       status: 'NEW',
-      timestamp: DateTime.now().toIso8601String(),
+      timestamp: DateTime.now(),
       address: _addressController.text.trim(),
     );
 
