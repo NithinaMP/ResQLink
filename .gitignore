@@ -51,6 +51,7 @@ lib/firebase_config.dart
 web/index.html
 web/locate.html
 lib/services/sms_service.dart
+web/map_view.html
 
 
 # Environment

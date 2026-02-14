@@ -5,6 +5,7 @@ import '../services/firestore_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'new_incident_screen.dart';
+import 'map_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -425,9 +426,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MapScreen(incident: incident),
+                  ),
+                ),
+                icon: const Icon(Icons.map, size: 16),
+                label: Text(
+                  incident.latitude != null
+                      ? '🗺️ View Route'
+                      : '🗺️ View Map',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
 }
