@@ -621,9 +621,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/incident_model.dart';
-import 'map_platform.dart';           // your existing platform bridge
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
-if (dart.library.html) 'inappwebview_stub.dart';   // ← Important for web
+if (dart.library.html) 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class MapScreen extends StatefulWidget {
   final IncidentModel incident;
@@ -642,7 +641,9 @@ class _MapScreenState extends State<MapScreen> {
 
   String get _mapUrl {
     final base = 'https://resqlink-eb041.web.app/map_view.html';
-    final params = StringBuffer('?slat=$_stationLat&slng=$_stationLng');
+    final params = StringBuffer('?');
+
+    params.write('slat=$_stationLat&slng=$_stationLng');
 
     if (widget.incident.latitude != null) {
       params.write('&clat=${widget.incident.latitude}&clng=${widget.incident.longitude}');
@@ -652,37 +653,9 @@ class _MapScreenState extends State<MapScreen> {
       ..write('&type=${Uri.encodeComponent(widget.incident.incidentType)}')
       ..write('&phone=${Uri.encodeComponent(widget.incident.callerPhone)}')
       ..write('&status=${Uri.encodeComponent(widget.incident.status)}')
-      ..write('&t=${DateTime.now().millisecondsSinceEpoch}');   // cache bust
+      ..write('&t=${DateTime.now().millisecondsSinceEpoch}');
 
     return base + params.toString();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) {
-      // Register iframe for web
-      _registerWebMap();
-    }
-  }
-
-  void _registerWebMap() {
-    try {
-      registerIframeViewFactory('resq-map-${DateTime.now().millisecondsSinceEpoch}', _mapUrl);
-    } catch (e) {
-      debugPrint('Map registration error: $e');
-    }
-  }
-
-  void _reloadMap() {
-    setState(() {
-      _isLoading = true;
-    });
-    if (kIsWeb) {
-      _registerWebMap();
-    } else {
-      _webViewController?.reload();
-    }
   }
 
   @override
@@ -691,74 +664,125 @@ class _MapScreenState extends State<MapScreen> {
       backgroundColor: const Color(0xFF1a1a1a),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2a2a2a),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(
-              '🗺️ ${widget.incident.incidentType} - Map View',
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '📞 ${widget.incident.callerPhone}',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            const Icon(Icons.map, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${widget.incident.incidentType} - Live Map',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Caller: ${widget.incident.callerPhone}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _reloadMap,
+            onPressed: () {
+              _webViewController?.reload();
+              setState(() => _isLoading = true);
+            },
           ),
-          if (kIsWeb)
-            IconButton(
-              icon: const Icon(Icons.open_in_new, color: Colors.white),
-              onPressed: () => openInNewTab(_mapUrl),
-            ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          // ── Map View (different implementation per platform) ──
-          if (kIsWeb)
-            HtmlElementView(viewType: 'resq-map-${DateTime.now().millisecondsSinceEpoch}')  // you may need to adjust viewId logic
-          else
-            InAppWebView(
-              initialUrlRequest: URLRequest(url: WebUri(_mapUrl)),
-              initialSettings: InAppWebViewSettings(
-                javaScriptEnabled: true,
-                useShouldOverrideUrlLoading: true,
-              ),
-              onWebViewCreated: (controller) {
-                _webViewController = controller;
-              },
-              onLoadStop: (controller, url) {
-                setState(() => _isLoading = false);
-              },
-              onLoadError: (controller, url, code, message) {
-                debugPrint('WebView error: $message');
-              },
-            ),
-
-          // Loading overlay
-          if (_isLoading)
-            Container(
-              color: const Color(0xFF1a1a1a),
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: Colors.red),
-                    SizedBox(height: 16),
-                    Text('Loading map...', style: TextStyle(color: Colors.grey)),
-                  ],
+          // Info Bar
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: const Color(0xFF2a2a2a),
+            child: Row(
+              children: [
+                _buildChip(widget.incident.incidentType, Colors.redAccent),
+                const SizedBox(width: 8),
+                _buildChip(
+                  widget.incident.status.toUpperCase(),
+                  (widget.incident.status.toLowerCase() == 'active' ||
+                      widget.incident.status.toLowerCase() == 'new')
+                      ? Colors.orange
+                      : Colors.green,
                 ),
-              ),
+                const Spacer(),
+                if (widget.incident.latitude != null)
+                  const Text('📍 GPS Available', style: TextStyle(color: Colors.green, fontSize: 13)),
+              ],
             ),
+          ),
+
+          // Map Area
+          Expanded(
+            child: Stack(
+              children: [
+                InAppWebView(
+                  initialUrlRequest: URLRequest(url: WebUri(_mapUrl)),
+                  initialSettings: InAppWebViewSettings(
+                    javaScriptEnabled: true,
+                  ),
+                  onWebViewCreated: (controller) {
+                    _webViewController = controller;
+                  },
+                  onLoadStop: (controller, url) {
+                    if (mounted) setState(() => _isLoading = false);
+                  },
+                  onLoadError: (controller, url, code, message) {
+                    debugPrint('Map Error: $message');
+                    if (mounted) setState(() => _isLoading = false);
+                  },
+                ),
+
+                if (_isLoading)
+                  Container(
+                    color: const Color(0xFF1a1a1a),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: Colors.redAccent),
+                          SizedBox(height: 20),
+                          Text('Loading interactive map...',
+                              style: TextStyle(color: Colors.grey, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.6)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
       ),
     );
   }

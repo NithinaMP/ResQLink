@@ -68,15 +68,26 @@ import 'package:resqlink/screens/dashboard_screen.dart';
 import 'package:resqlink/screens/login_screen.dart';
 
 
+import 'package:flutter/foundation.dart';           // add this if not present
+import 'firebase_options.dart';                    // make sure this import exists
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (Auto-config using google-services.json)
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const ResQLinkApp());
 }
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//
+//   // Initialize Firebase (Auto-config using google-services.json)
+//   await Firebase.initializeApp();
+//
+//   runApp(const ResQLinkApp());
+// }
 
 class ResQLinkApp extends StatelessWidget {
   const ResQLinkApp({super.key});
