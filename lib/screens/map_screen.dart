@@ -617,10 +617,12 @@
 
 
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/incident_model.dart';
+import 'map_platform.dart';   // Your existing platform bridge
+
+// Conditional import - Real on mobile, ignored on web
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
 if (dart.library.html) 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -641,9 +643,7 @@ class _MapScreenState extends State<MapScreen> {
 
   String get _mapUrl {
     final base = 'https://resqlink-eb041.web.app/map_view.html';
-    final params = StringBuffer('?');
-
-    params.write('slat=$_stationLat&slng=$_stationLng');
+    final params = StringBuffer('?slat=$_stationLat&slng=$_stationLng');
 
     if (widget.incident.latitude != null) {
       params.write('&clat=${widget.incident.latitude}&clng=${widget.incident.longitude}');
@@ -653,9 +653,26 @@ class _MapScreenState extends State<MapScreen> {
       ..write('&type=${Uri.encodeComponent(widget.incident.incidentType)}')
       ..write('&phone=${Uri.encodeComponent(widget.incident.callerPhone)}')
       ..write('&status=${Uri.encodeComponent(widget.incident.status)}')
-      ..write('&t=${DateTime.now().millisecondsSinceEpoch}');
+      ..write('&t=${DateTime.now().millisecondsSinceEpoch}'); // prevent caching
 
     return base + params.toString();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      registerIframeViewFactory('resq-map', _mapUrl);
+    }
+  }
+
+  void _reloadMap() {
+    setState(() => _isLoading = true);
+    if (kIsWeb) {
+      registerIframeViewFactory('resq-map', _mapUrl); // refresh iframe
+    } else {
+      _webViewController?.reload();
+    }
   }
 
   @override
@@ -697,11 +714,14 @@ class _MapScreenState extends State<MapScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _webViewController?.reload();
-              setState(() => _isLoading = true);
-            },
+            onPressed: _reloadMap,
           ),
+          if (kIsWeb)
+            IconButton(
+              icon: const Icon(Icons.open_in_new, color: Colors.white),
+              tooltip: 'Open in new tab',
+              onPressed: () => openInNewTab(_mapUrl),
+            ),
         ],
       ),
       body: Column(
@@ -716,10 +736,7 @@ class _MapScreenState extends State<MapScreen> {
                 const SizedBox(width: 8),
                 _buildChip(
                   widget.incident.status.toUpperCase(),
-                  (widget.incident.status.toLowerCase() == 'active' ||
-                      widget.incident.status.toLowerCase() == 'new')
-                      ? Colors.orange
-                      : Colors.green,
+                  widget.incident.status.toLowerCase() == 'active' ? Colors.orange : Colors.green,
                 ),
                 const Spacer(),
                 if (widget.incident.latitude != null)
@@ -732,23 +749,22 @@ class _MapScreenState extends State<MapScreen> {
           Expanded(
             child: Stack(
               children: [
-                InAppWebView(
-                  initialUrlRequest: URLRequest(url: WebUri(_mapUrl)),
-                  initialSettings: InAppWebViewSettings(
-                    javaScriptEnabled: true,
-                  ),
-                  onWebViewCreated: (controller) {
-                    _webViewController = controller;
-                  },
-                  onLoadStop: (controller, url) {
-                    if (mounted) setState(() => _isLoading = false);
-                  },
-                  onLoadError: (controller, url, code, message) {
-                    debugPrint('Map Error: $message');
-                    if (mounted) setState(() => _isLoading = false);
-                  },
-                ),
+                // Mobile - Real Interactive Map
+                if (!kIsWeb)
+                  InAppWebView(
+                    initialUrlRequest: URLRequest(url: WebUri(_mapUrl)),
+                    initialSettings: InAppWebViewSettings(javaScriptEnabled: true),
+                    onWebViewCreated: (controller) => _webViewController = controller,
+                    onLoadStop: (controller, url) {
+                      if (mounted) setState(() => _isLoading = false);
+                    },
+                  )
 
+                // Web - Iframe via HtmlElementView
+                else
+                  const HtmlElementView(viewType: 'resq-map'),
+
+                // Loading Overlay
                 if (_isLoading)
                   Container(
                     color: const Color(0xFF1a1a1a),
@@ -758,8 +774,10 @@ class _MapScreenState extends State<MapScreen> {
                         children: [
                           CircularProgressIndicator(color: Colors.redAccent),
                           SizedBox(height: 20),
-                          Text('Loading interactive map...',
-                              style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          Text(
+                            'Loading interactive map...',
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
                         ],
                       ),
                     ),
